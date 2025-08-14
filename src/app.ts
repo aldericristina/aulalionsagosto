@@ -174,6 +174,7 @@ function isValidUser(obj: any): obj is IUser {
 }
 
 import express, {Request,Response} from 'express';
+import { get } from 'http';
 const app = express();
 app.use(express.json());
 
@@ -233,3 +234,9 @@ app.delete("/users/:id", (req: Request<{ id: string }>, res: Response<{ message:
 // Inicia o servidor
 app.listen(3000, () => {
   console.log("🚀 Servidor rodando em http://localhost:3000")})
+//git checkout -b NovaBranch
+//git add .
+//git commit -m “adicionado validacao de cpf”
+git remote add origin https://github.com/JeanEdiel/tech-skills.git
+
+
