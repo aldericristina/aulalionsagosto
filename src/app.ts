@@ -105,6 +105,9 @@ interface IProduct {
   inStock: boolean;
 }
 
+
+
+
 // 1️⃣ Função genérica que retorna o mesmo array
 function getData<T>(items: T[]): T[] {
   return items;
@@ -155,7 +158,23 @@ interface IUser {
   name: string;
   email: string;
   isActive: boolean;
+  }
+
+  export interface ICountry {
+  name: {
+    common: string;
+    official: string;
+  };
+  region: Region;
+  subregion?: string;
+  capital?: string[];
+  population: number;
+  flags: {
+    svg: string;
+    png: string;
+  };
 }
+
 
 // Array de usuários em memória
 let users2: IUser[] = [
@@ -173,10 +192,27 @@ function isValidUser(obj: any): obj is IUser {
   );
 }
 
-import express, {Request,Response} from 'express';
+import express, {Request,Response} from'express';
+import validationBr from 'validation-br';
+
 import { get } from 'http';
+import cep from 'cep-promise';
+
+
+import axios from "axios";
+
+
 const app = express();
 app.use(express.json());
+const PORT = process.env.PORT || 3000;
+
+app.get("/", (_req: Request, res: Response) => {
+  res.send("🌍 API de Países rodando com TypeScript");
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+});
 
 // GET /users → retorna todos
 app.get("/users", (req: Request, res: Response) => {
@@ -231,12 +267,108 @@ app.delete("/users/:id", (req: Request<{ id: string }>, res: Response<{ message:
   res.json({ message: "Usuário removido com sucesso" });
 });
 
-// Inicia o servidor
+
+app.get("/valida-cpf/:cpf", (req: Request<{ cpf:"string"}> , res: Response) => {
+  if(validationBr.isCPF(req.params.cpf)){
+    return res.send("cpf valido")
+  } else{
+    return res.send ("cpf invalido")
+  }
+});
+
+  app.get("/valida-cnpj/:cnpj", (req: Request<{ cpf:"string"}> , res: Response) => {
+  if(validationBr.isCNPJ(req.params.cpf)){
+    return res.send("cnpj valido")
+  } else{
+    return res.send ("cnpj invalido")
+  }
+});
+  app.get("/valida-cnh/:cnh", (req: Request<{ cnh:"string"}> , res: Response) => {
+  if(validationBr.isCNH(req.params.cnh)){
+    return res.send("cnh valido")
+  } else{
+    return res.send("cnh invalido")
+   }})
+
+   app.get('/valida-cep/:cep', async (req: Request<{ cep: string | number }>, res: Response) => {
+   const dados: any = await cep(req.params.cep)
+                            .then((data) => { return data})
+                            .catch((err) => { return err });
+    return res.json({ dados:  dados });
+   })
+
+//import cep from 'cep-promise';
 app.listen(3000, () => {
-  console.log("🚀 Servidor rodando em http://localhost:3000")})
-//git checkout -b NovaBranch
-//git add .
-//git commit -m “adicionado validacao de cpf”
-git remote add origin https://github.com/JeanEdiel/tech-skills.git
+  console.log('Servidor rodando na porta 3000');
+});
 
 
+export class CountryService {
+  private apiUrl = "https://restcountries.com/v3.1/all";
+  private countries: ICountry[] = [];
+
+  // Carrega os dados da API e armazena em memória
+  public async loadCountries(): Promise<void> {
+    if (this.countries.length === 0) {
+      const response = await axios.get<ICountry[]>(this.apiUrl);
+      this.countries = response.data;
+    }
+  }
+public getAll(): ICountry[] {
+    return this.countries;
+  }
+  // Pesquisa por nome
+  public searchByName(name: string): ICountry[] {
+    return this.countries.filter((Country) =>
+      Country.name.common.toLowerCase().includes(name.toLowerCase())
+    );
+  }
+
+  // Filtra por região
+  public filterByRegion(region: string): ICountry[] {
+    return this.countries.filter(
+      (Country) => Country.region.toLowerCase() === region.toLowerCase()
+    );
+  }
+}
+// 🔍 Buscar todos os países
+app.get("/countries", async (_req: Request, res: Response) => {
+  try {
+    const response = await axios.get<ICountry[]>("https://restcountries.com/v3.1/all");
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao buscar países" });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+});
+
+
+export interface ICountry {
+  name: ICountryName;
+  region: Region;
+  subregion?: string;
+  capital?: string[];
+  population: number;
+  flags: ICountryFlags;
+}
+
+export interface ICountryName {
+  common: string;
+  official: string;
+}
+
+export interface ICountryFlags {
+  svg: string;
+  png: string;
+}
+
+export enum Region {
+  Africa = "Africa",
+  Americas = "Americas",
+  Asia = "Asia",
+  Europe = "Europe",
+  Oceania = "Oceania"
+}
