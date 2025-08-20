@@ -334,13 +334,20 @@ public getAll(): ICountry[] {
 // 🔍 Buscar todos os países
 app.get("/countries", async (_req: Request, res: Response) => {
   try {
-    const response = await axios.get<ICountry[]>("https://restcountries.com/v3.1/all");
+    const response = await axios.get<ICountry[]>("https://restcountries.com/v3.1/all?fields=name,flags");
     res.json(response.data);
   } catch (error) {
     res.status(500).json({ error: "Erro ao buscar países" });
   }
 });
-
+app.get("/countries/:name", async (_req: Request, res: Response) => {
+  try {
+    const response = await axios.get<ICountry[]>("https://restcountries.com/v3.1/name/"+_req.params.name);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: "Erro ao buscar países" });
+  }
+});
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
 });
@@ -371,4 +378,71 @@ export enum Region {
   Asia = "Asia",
   Europe = "Europe",
   Oceania = "Oceania"
+}
+
+// interfaces/Country.ts exercio 9.3
+export interface ICountry {
+  name: {
+    common: string;
+    official: string;
+  };
+  cca2: string; // código alfa-2
+  cca3: string; // código alfa-3
+  Region: string;
+  subregion?: string;
+  capital?: string[];
+  population: number;
+  Flags: {
+    png: string;
+    svg: string;
+    alt?: string;
+  };
+}
+
+const API_URL = "https://restcountries.com/v3.1/all";
+
+export async function fetchCountries(): Promise<ICountry[]> {
+  try {
+    const response = await axios.get<ICountry[]>(API_URL);
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao buscar países:", error);
+    return []; // retorna array vazio em caso de erro
+  }
+}
+
+// index.ts exemplo 
+async function main() {
+  const countries: any = await fetchCountries();
+
+  if (countries.length > 0) {
+    console.log("Total de países:", countries.length);
+    console.log("Primeiro país:", countries[0].name.common);
+  } else {
+    console.log("Nenhum país encontrado.");
+  }
+}
+
+
+
+export class CountryManager {
+  private countries: ICountry[];
+
+  constructor(countries: ICountry[]) {
+    this.countries = countries;
+  }
+
+    public searchByName(term: string): ICountry[] {
+    const lowerTerm = term.toLowerCase();
+    return this.countries.filter(country =>
+      country.name.common.toLowerCase().includes(lowerTerm)
+    );
+  }
+
+  /**
+   * Filtra países pela região (ex: "Europe", "Asia"...).
+   */
+  public filterByRegion(region: Region): ICountry[] {
+    return this.countries.filter(country => country.region === region);
+  }
 }

@@ -13,5 +13,5 @@ interface ICountry {
     png: string;
   };
 }
+export type Region = "Africa" | "Americas" | "Asia" | "Europe" | "Oceania";
 
-export {ICountry}

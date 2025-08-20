@@ -3,6 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.CountryManager = exports.Region = exports.CountryService = void 0;
+exports.fetchCountries = fetchCountries;
 console.log("hello type script");
 let nome = "cristina";
 let ano = 2025;
@@ -109,8 +111,18 @@ function isValidUser(obj) {
         typeof obj.isActive === "boolean");
 }
 const express_1 = __importDefault(require("express"));
+const validation_br_1 = __importDefault(require("validation-br"));
+const cep_promise_1 = __importDefault(require("cep-promise"));
+const axios_1 = __importDefault(require("axios"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
+const PORT = process.env.PORT || 3000;
+app.get("/", (_req, res) => {
+    res.send("🌍 API de Países rodando com TypeScript");
+});
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+});
 // GET /users → retorna todos
 app.get("/users", (req, res) => {
     res.json(users);
@@ -152,10 +164,131 @@ app.delete("/users/:id", (req, res) => {
     users = users.filter(u => u.id !== id);
     res.json({ message: "Usuário removido com sucesso" });
 });
-// Inicia o servidor
-app.listen(3000, () => {
-    console.log("🚀 Servidor rodando em http://localhost:3000");
+app.get("/valida-cpf/:cpf", (req, res) => {
+    if (validation_br_1.default.isCPF(req.params.cpf)) {
+        return res.send("cpf valido");
+    }
+    else {
+        return res.send("cpf invalido");
+    }
 });
+app.get("/valida-cnpj/:cnpj", (req, res) => {
+    if (validation_br_1.default.isCNPJ(req.params.cpf)) {
+        return res.send("cnpj valido");
+    }
+    else {
+        return res.send("cnpj invalido");
+    }
+});
+app.get("/valida-cnh/:cnh", (req, res) => {
+    if (validation_br_1.default.isCNH(req.params.cnh)) {
+        return res.send("cnh valido");
+    }
+    else {
+        return res.send("cnh invalido");
+    }
+});
+app.get('/valida-cep/:cep', async (req, res) => {
+    const dados = await (0, cep_promise_1.default)(req.params.cep)
+        .then((data) => { return data; })
+        .catch((err) => { return err; });
+    return res.json({ dados: dados });
+});
+//import cep from 'cep-promise';
+app.listen(3000, () => {
+    console.log('Servidor rodando na porta 3000');
+});
+class CountryService {
+    constructor() {
+        this.apiUrl = "https://restcountries.com/v3.1/all";
+        this.countries = [];
+    }
+    // Carrega os dados da API e armazena em memória
+    async loadCountries() {
+        if (this.countries.length === 0) {
+            const response = await axios_1.default.get(this.apiUrl);
+            this.countries = response.data;
+        }
+    }
+    getAll() {
+        return this.countries;
+    }
+    // Pesquisa por nome
+    searchByName(name) {
+        return this.countries.filter((Country) => Country.name.common.toLowerCase().includes(name.toLowerCase()));
+    }
+    // Filtra por região
+    filterByRegion(region) {
+        return this.countries.filter((Country) => Country.region.toLowerCase() === region.toLowerCase());
+    }
+}
+exports.CountryService = CountryService;
+// 🔍 Buscar todos os países
+app.get("/countries", async (_req, res) => {
+    try {
+        const response = await axios_1.default.get("https://restcountries.com/v3.1/all?fields=name,flags");
+        res.json(response.data);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Erro ao buscar países" });
+    }
+});
+app.get("/countries/:name", async (_req, res) => {
+    try {
+        const response = await axios_1.default.get("https://restcountries.com/v3.1/name/" + _req.params.name);
+        res.json(response.data);
+    }
+    catch (error) {
+        res.status(500).json({ error: "Erro ao buscar países" });
+    }
+});
+app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+});
+var Region;
+(function (Region) {
+    Region["Africa"] = "Africa";
+    Region["Americas"] = "Americas";
+    Region["Asia"] = "Asia";
+    Region["Europe"] = "Europe";
+    Region["Oceania"] = "Oceania";
+})(Region || (exports.Region = Region = {}));
+const API_URL = "https://restcountries.com/v3.1/all";
+async function fetchCountries() {
+    try {
+        const response = await axios_1.default.get(API_URL);
+        return response.data;
+    }
+    catch (error) {
+        console.error("Erro ao buscar países:", error);
+        return []; // retorna array vazio em caso de erro
+    }
+}
+// index.ts exemplo 
+async function main() {
+    const countries = await fetchCountries();
+    if (countries.length > 0) {
+        console.log("Total de países:", countries.length);
+        console.log("Primeiro país:", countries[0].name.common);
+    }
+    else {
+        console.log("Nenhum país encontrado.");
+    }
+}
+class CountryManager {
+    constructor(countries) {
+        this.countries = countries;
+    }
+    searchByName(term) {
+        const lowerTerm = term.toLowerCase();
+        return this.countries.filter(country => country.name.common.toLowerCase().includes(lowerTerm));
+    }
+    /**
+     * Filtra países pela região (ex: "Europe", "Asia"...).
+     */
+    filterByRegion(region) {
+        return this.countries.filter(country => country.region === region);
+    }
+}
+exports.CountryManager = CountryManager;
 //# sourceMappingURL=app.js.map
-
-
